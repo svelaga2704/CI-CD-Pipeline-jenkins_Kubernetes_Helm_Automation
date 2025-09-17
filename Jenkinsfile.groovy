@@ -1,8 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yamlFile 'k8s/kaniko.yaml'
+        }
+    }
     environment {
         IMAGE_NAME = "svelaga2704/ci-cd-demo"
-        IMAGE_TAG = "v1"
+        IMAGE_TAG = "latest"
     }
     stages {
         stage('Checkout') {
@@ -15,7 +19,7 @@ pipeline {
             steps {
                 container('kaniko') {
                     sh '''
-                    /kaniko/executor \
+                        /kaniko/executor \
                         --dockerfile=Dockerfile.dockerfile \
                         --context=`pwd` \
                         --destination=$IMAGE_NAME:$IMAGE_TAG
@@ -25,7 +29,9 @@ pipeline {
         }
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl apply -f k8s/deployment.yaml -n ci'
+                sh '''
+                kubectl apply -f k8s/deployment.yaml -n ci
+                '''
             }
         }
     }
