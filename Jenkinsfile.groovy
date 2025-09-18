@@ -51,7 +51,7 @@ kind: Pod
 spec:
   containers:
   - name: kubectl
-    image: bitnami/kubectl:latest
+    image: bitnami/kubectl:1.28   # ✅ correct version instead of :latest
     command:
     - cat
     tty: true
@@ -63,6 +63,7 @@ spec:
                     sh '''
                       echo "🚀 Deploying to Kubernetes..."
                       kubectl apply -f k8s/deployment.yaml -n ci
+                      kubectl rollout status deployment/ci-cd-app -n ci
                     '''
                 }
             }
