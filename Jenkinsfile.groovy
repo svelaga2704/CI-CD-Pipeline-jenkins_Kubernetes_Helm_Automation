@@ -6,7 +6,7 @@ pipeline {
             agent {
                 kubernetes {
                     label 'kaniko-build'
-                    defaultContainer 'jnlp'
+                    defaultContainer 'kaniko'
                     yaml """
 apiVersion: v1
 kind: Pod
@@ -14,7 +14,11 @@ spec:
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    tty: true
+    args:
+      - "--context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main"
+      - "--dockerfile=Dockerfile.dockerfile"
+      - "--destination=docker.io/svelaga2704/ci-cd-demo:latest"
+      - "--verbosity=debug"
     volumeMounts:
     - name: docker-config
       mountPath: /kaniko/.docker/
@@ -30,15 +34,7 @@ spec:
                 }
             }
             steps {
-                container('kaniko') {
-                    sh '''
-                      /kaniko/executor \
-                        --context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main \
-                        --dockerfile=Dockerfile.dockerfile \
-                        --destination=docker.io/svelaga2704/ci-cd-demo:latest \
-                        --verbosity=debug
-                    '''
-                }
+                echo "✅ Kaniko build started inside pod"
             }
         }
 
