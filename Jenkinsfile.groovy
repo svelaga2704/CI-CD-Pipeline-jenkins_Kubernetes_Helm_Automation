@@ -20,30 +20,51 @@ spec:
       - "--destination=docker.io/svelaga2704/ci-cd-demo:latest"
       - "--verbosity=debug"
     volumeMounts:
-    - name: docker-config
-      mountPath: /kaniko/.docker/
-      readOnly: true
+      - name: docker-config
+        mountPath: /kaniko/.docker/
+        readOnly: true
   volumes:
   - name: docker-config
     secret:
       secretName: dockerhub-secret
       items:
-      - key: .dockerconfigjson
-        path: config.json
+        - key: .dockerconfigjson
+          path: config.json
 """
                 }
             }
             steps {
-                echo "✅ Kaniko build started inside pod"
+                container('kaniko') {
+                    echo "✅ Kaniko build started inside pod"
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
-            agent any
+            agent {
+                kubernetes {
+                    label 'kubectl-deployer'
+                    defaultContainer 'kubectl'
+                    yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - cat
+    tty: true
+"""
+                }
+            }
             steps {
-                sh '''
-                  kubectl apply -f k8s/deployment.yaml -n ci
-                '''
+                container('kubectl') {
+                    sh '''
+                      echo "🚀 Deploying to Kubernetes..."
+                      kubectl apply -f k8s/deployment.yaml -n ci
+                    '''
+                }
             }
         }
     }
