@@ -1,34 +1,51 @@
 pipeline {
-    agent {
-        kubernetes {
-            yamlFile 'k8s/kaniko.yaml'
-        }
-    }
-
-    environment {
-        IMAGE_NAME = "svelaga2704/ci-cd-demo"
-        IMAGE_TAG  = "latest"
-    }
+    agent none
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git'
+        stage('Build & Push Image') {
+            agent {
+                kubernetes {
+                    label 'kaniko-build'
+                    yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker/
+      readOnly: true
+  volumes:
+  - name: docker-config
+    secret:
+      secretName: dockerhub-secret
+"""
+                }
             }
-        }
-
-        stage('Build & Push with Kaniko') {
             steps {
                 container('kaniko') {
                     sh '''
-                      /kaniko/executor \
-                        --dockerfile=Dockerfile.dockerfile \
-                        --context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main \
-                        --destination=$IMAGE_NAME:$IMAGE_TAG \
-                        --verbosity=debug
+                    /kaniko/executor \
+                      --context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main \
+                      --dockerfile=Dockerfile.dockerfile \
+                      --destination=docker.io/svelaga2704/ci-cd-demo:latest \
+                      --verbosity=debug
                     '''
                 }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            agent any
+            steps {
+                sh '''
+                kubectl apply -f k8s/deployment.yaml -n ci
+                '''
             }
         }
     }

@@ -1,27 +1,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: jenkins
+  name: ci-cd-app
   namespace: ci
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jenkins
+      app: ci-cd-app
   template:
     metadata:
       labels:
-        app: jenkins
+        app: ci-cd-app
     spec:
       containers:
-      - name: jenkins
-        image: jenkins/jenkins:lts
+      - name: ci-cd-app
+        image: docker.io/svelaga2704/ci-cd-demo:latest
+        imagePullPolicy: Always   # 🔑 Always pull the newest image
         ports:
-        - containerPort: 8080
-        - containerPort: 50000
-        volumeMounts:
-        - name: jenkins-home
-          mountPath: /var/jenkins_home
-      volumes:
-      - name: jenkins-home
-        emptyDir: {}
+        - containerPort: 5000
+      imagePullSecrets:
+      - name: dockerhub-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ci-cd-app-service
+  namespace: ci
+spec:
+  selector:
+    app: ci-cd-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: NodePort   # Or LoadBalancer if using cloud
