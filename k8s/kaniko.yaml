@@ -3,27 +3,24 @@ kind: Pod
 metadata:
   name: jenkins-kaniko
   namespace: ci
-  labels:
-    jenkins/jenkins-jenkins-agent: "true"
 spec:
-  serviceAccountName: default
   containers:
-  - name: jnlp
-    image: jenkins/inbound-agent:3327.v868139a_d00e0-8
-    args: ["$(JENKINS_SECRET)", "$(JENKINS_NAME)"]
-    env:
-    - name: JENKINS_URL
-      value: "http://jenkins.ci.svc.cluster.local:8080/"
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    command:
-    - cat
-    tty: true
+    args:
+      - "--context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main"
+      - "--dockerfile=Dockerfile.dockerfile"
+      - "--destination=docker.io/svelaga2704/ci-cd-demo:latest"
+      - "--verbosity=debug"
     volumeMounts:
-    - name: kaniko-secret
-      mountPath: /kaniko/.docker/
-      readOnly: true
+      - name: docker-config
+        mountPath: /kaniko/.docker/
+        readOnly: true
+  restartPolicy: Never
   volumes:
-  - name: kaniko-secret
-    secret:
-      secretName: dockerhub-secret
+    - name: docker-config
+      secret:
+        secretName: dockerhub-secret
+        items:
+          - key: .dockerconfigjson
+            path: config.json
