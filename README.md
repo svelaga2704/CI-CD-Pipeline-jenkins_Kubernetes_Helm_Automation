@@ -116,6 +116,18 @@ Jenkins Kubernetes plugin requires valid kubectl image tags; some tags (latest, 
 
 Always verify image availability on Docker Hub before referencing it in pipeline.
 
+## Workflow On how it works
+
+Developer → pushes code to GitHub Repo.
+Jenkins (running in Kubernetes) detects changes and triggers the pipeline.
+Jenkins starts a Kaniko Pod (Build) to build the Docker image securely inside Kubernetes.
+Kaniko pushes the image to Docker Hub.
+Jenkins then runs a Kubectl Pod (Deploy) that applies the deployment YAMLs/Helm charts.
+The app is deployed in the Kubernetes Cluster.
+Finally, the End User accesses the application.
+
+This connects all the pieces: Kubernetes (to run Jenkins & workloads), Kaniko (secure container builds without Docker daemon), and Helm (to manage Kubernetes deployments).
+
 ## 🏁 Next Steps
 Replace kubectl image in Jenkinsfile with a valid one:
 
