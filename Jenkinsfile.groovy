@@ -15,11 +15,6 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
     tty: true
-    command:
-    - /busybox/sh
-    args:
-    - -c
-    - cat
     volumeMounts:
     - name: docker-config
       mountPath: /kaniko/.docker/
