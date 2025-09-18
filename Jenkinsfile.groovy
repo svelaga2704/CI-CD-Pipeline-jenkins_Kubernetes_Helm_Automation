@@ -6,6 +6,7 @@ pipeline {
             agent {
                 kubernetes {
                     label 'kaniko-build'
+                    defaultContainer 'jnlp'
                     yaml """
 apiVersion: v1
 kind: Pod
@@ -13,9 +14,12 @@ spec:
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
-    command:
-    - cat
     tty: true
+    command:
+    - /busybox/sh
+    args:
+    - -c
+    - cat
     volumeMounts:
     - name: docker-config
       mountPath: /kaniko/.docker/
@@ -24,17 +28,20 @@ spec:
   - name: docker-config
     secret:
       secretName: dockerhub-secret
+      items:
+      - key: .dockerconfigjson
+        path: config.json
 """
                 }
             }
             steps {
                 container('kaniko') {
                     sh '''
-                    /kaniko/executor \
-                      --context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main \
-                      --dockerfile=Dockerfile.dockerfile \
-                      --destination=docker.io/svelaga2704/ci-cd-demo:latest \
-                      --verbosity=debug
+                      /kaniko/executor \
+                        --context=git://github.com/svelaga2704/CI-CD-Pipeline-jenkins_Kubernetes_Helm_Automation.git#main \
+                        --dockerfile=Dockerfile.dockerfile \
+                        --destination=docker.io/svelaga2704/ci-cd-demo:latest \
+                        --verbosity=debug
                     '''
                 }
             }
@@ -44,7 +51,7 @@ spec:
             agent any
             steps {
                 sh '''
-                kubectl apply -f k8s/deployment.yaml -n ci
+                  kubectl apply -f k8s/deployment.yaml -n ci
                 '''
             }
         }
